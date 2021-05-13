@@ -1,0 +1,5 @@
+./handwritten_data/clean/*
+./handwritten_data/dirty/*
+*.zip
+*.jpg
+*.png
