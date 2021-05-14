@@ -58,7 +58,8 @@ python3 augmentation.py
 gdown 1hQ42JgyosLSzryex4hNPKntTkGytIh1B
 ```
 
-## TODO: 每個人要clean的資料，除了 廖威仲是split_1之外，其餘的split_2/3/4 各由一個人認領
+## TODO: 
+每個人要clean的資料，除了 廖威仲是split_1之外，其餘的split_2/3/4 各由一個人認領
 ```
 gdown 1w5aPcqMebeqSN8w2ehvPJG8MAZJTGIS8
 ```
