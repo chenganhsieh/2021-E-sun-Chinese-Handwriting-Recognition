@@ -10,16 +10,12 @@
                     * 丁.jpg
             * default
                 * 丁
-                    * clean
-                        * 丁.jpg
                     * 丁.jpg
         * dirty
             * aiteam
                 * 丁
-                    * dirty
-                        * bg1_丁.jpg
-                        * bg2_丁.jpg
-                    * 丁.jpg
+                    * bg1_丁.jpg
+                    * bg2_丁.jpg
             * default
                 * 丁
                     * 丁.jpg
