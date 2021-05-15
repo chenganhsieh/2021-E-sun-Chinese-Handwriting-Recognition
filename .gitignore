@@ -3,7 +3,9 @@ __pycache__/
 
 # Datas
 images/
+wandb/
 
 # Files
 *.zip
 *.pth
+*.png
