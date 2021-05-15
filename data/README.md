@@ -51,11 +51,11 @@ python3 augmentation.py
 
 ## 原先官網的60000多張圖片，按照label存成資料夾
 ```
-gdown 1hQ42JgyosLSzryex4hNPKntTkGytIh1B
+gdown --id '1hQ42JgyosLSzryex4hNPKntTkGytIh1B' --output data.zip
 ```
 
 ## TODO: 
 每個人要clean的資料，除了 廖威仲是split_1之外，其餘的split_2/3/4 各由一個人認領
 ```
-gdown 1w5aPcqMebeqSN8w2ehvPJG8MAZJTGIS8
+gdown --id '1w5aPcqMebeqSN8w2ehvPJG8MAZJTGIS8' --output cleaning.zip
 ```
