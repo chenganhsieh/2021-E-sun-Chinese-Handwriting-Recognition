@@ -27,7 +27,7 @@ def parse_args():
     
     #Directories
     parser.add_argument("--data_dir", type=str, default='./images', help="The directory which contains the training data.")
-    parser.add_argument("--model_save_path", type=str, default='model_scratch.pth', help="Where to store the final model.")
+    parser.add_argument("--model_save_path", type=str, default='model_transforms.pth', help="Where to store the final model.")
     
     #Training
     parser.add_argument("--num_train_epochs", type=int, default=50, help="Total number of training epochs to perform.")
@@ -38,7 +38,6 @@ def parse_args():
     
     parser.add_argument("--seed", type=int, default=390625, help="A seed for reproducible training.")
     parser.add_argument("--pretrained_weight", type=bool, default=False, help="Whether to use pretrained weight provided in pytorch or not.")
-    parser.add_argument("--nowandb", action="store_true", help="Cancel logging training curve on wandb.")
     parser.add_argument("--debug", action="store_true", help="Activate debug mode and run training only with a subset of data.")
     
     args = parser.parse_args()
@@ -59,7 +58,9 @@ def main(args):
     
     train_transform = transforms.Compose([
         SquarePad(),
+        transforms.RandomResizedCrop((224, 224), scale=(0.08, 1.0)),
         transforms.Resize(224),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.3),
         transforms.RandomRotation(15,fill=(255,255,255)),
         transforms.ToTensor(),
     ])
@@ -67,7 +68,6 @@ def main(args):
     #     SquarePad(),
     #     transforms.ToTensor(),
     # ])
-    
     dataset = datasets.ImageFolder(args.data_dir, transform = train_transform)
     
     # Output a training image for observation
@@ -89,12 +89,15 @@ def main(args):
     num_train_batch = len(train_loader)
     num_eval_batch = len(eval_loader)
     
-    # Load model and modify fully-connected layer output to num_class
-    model = models.resnet50(pretrained=args.pretrained_weight)
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, num_class)
+    # Load model
+    if args.pretrained_weight: # If using pretrained weight, modify fully-connected layer output to num_class.
+        model = models.resnet50(pretrained=True)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_class)
+    else:
+        model = models.resnet50(pretrained=False, num_classes=num_class)
     model.cuda()
-    if not args.nowandb:
+    if not args.debug:
         wandb.watch(model)   
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
@@ -132,15 +135,15 @@ def main(args):
         print(f'epoch [{epoch+1:02d}/{args.num_train_epochs}]: {time.time()-epoch_start_time:.2f} sec(s)')
         print(f'train loss: {train_loss:.4f}, train acc: {train_acc:.4f}')
         print(f' eval loss: {eval_loss:.4f},  eval acc: {eval_acc:.4f}')
-        if not args.nowandb:
+        if not args.debug:
             wandb.log({"train_loss": train_loss, "train_acc": train_acc, "eval_loss": eval_loss, "eval_acc": eval_acc})
         torch.save(model, args.model_save_path)  
     return
 
 if __name__ == "__main__":
     args = parse_args()
-    if not args.nowandb:
-        wandb.init(project='chinese_handwriting_recognition', entity='guan27',name='scratch')
+    if not args.debug:
+        wandb.init(project='chinese_handwriting_recognition', entity='guan27',name='transforms')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)

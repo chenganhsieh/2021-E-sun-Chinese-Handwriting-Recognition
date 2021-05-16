@@ -3,6 +3,7 @@ __pycache__/
 
 # Datas
 images/
+split/
 wandb/
 
 # Files
