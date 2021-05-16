@@ -22,16 +22,36 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True    
 
+def macro_f1(num_class, y_pred, y_true):
+    tps , fps, fns = [0]*num_class, [0]*num_class, [0]*num_class
+    num_samples, f1_score = len(y_pred), 0
+    for i in range(num_samples):
+        y_pred_i = y_pred[i]
+        y_true_i = y_true[i]
+        if y_pred_i == y_true_i:
+            tps[y_pred_i] += 1
+        else:
+            fps[y_pred_i] += 1
+            fns[y_true_i] += 1
+    
+    for i in range(num_class):
+        if tps[i]:
+            tp, fp, fn = tps[i], fps[i], fns[i]
+            p ,r = tp/(tp + fp), tp/(tp + fn)
+            f1_score += 2*p*r/(p+r)
+    return sum(tps)/num_samples, f1_score/num_class
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a CNN model for Chinese Handwriting Recognition.")
     
     #Directories
     parser.add_argument("--data_dir", type=str, default='./images', help="The directory which contains the training data.")
-    parser.add_argument("--model_save_path", type=str, default='model_transforms.pth', help="Where to store the final model.")
+    parser.add_argument("--model_save_path", type=str, default='model.pth', help="Where to store the final model.")
     
     #Training
     parser.add_argument("--num_train_epochs", type=int, default=50, help="Total number of training epochs to perform.")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size for the dataloader.")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for the dataloader.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     
@@ -45,7 +65,6 @@ def parse_args():
 
 
 def main(args):
-    
     # Prepare dataset with specified transform 
     class SquarePad:
         def __call__(self, image):
@@ -58,9 +77,8 @@ def main(args):
     
     train_transform = transforms.Compose([
         SquarePad(),
-        transforms.RandomResizedCrop((224, 224), scale=(0.08, 1.0)),
-        transforms.Resize(224),
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.3),
+        transforms.RandomResizedCrop(224, scale=(0.8, 1)),
+        transforms.RandomApply([transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.3)],p=0.3),
         transforms.RandomRotation(15,fill=(255,255,255)),
         transforms.ToTensor(),
     ])
@@ -73,7 +91,8 @@ def main(args):
     # Output a training image for observation
     # import matplotlib.pyplot as plt
     # plt.imsave('test.png',np.transpose(dataset[0][0].numpy(),(1,2,0)))
-    
+    # exit()
+
     class_to_idx = dataset.class_to_idx
     num_class = len(class_to_idx)
     if args.debug: # Cut dataset size in debug mode
@@ -105,45 +124,51 @@ def main(args):
     for epoch in range(args.num_train_epochs):
         # Training step
         model.train()
+        optimizer.zero_grad()  
         epoch_start_time = time.time()
-        train_acc, train_loss, eval_acc, eval_loss= 0.0, 0.0, 0.0, 0.0
+        train_loss, eval_loss= 0.0, 0.0
+        y_pred_list , y_true_list= [], []
         for i, (x,y) in enumerate(train_loader):
-            optimizer.zero_grad()
             y_pred = model(x.cuda())
             loss = criterion(y_pred, y.cuda())
+            loss = loss / args.gradient_accumulation_steps
             loss.backward()
-            optimizer.step()
-            train_acc += np.sum(np.argmax(y_pred.cpu().data.numpy(), axis=1) == y.numpy())
+            if (i+1) % args.gradient_accumulation_steps == 0 or (i+1) == num_train_batch:
+                optimizer.step()
+                optimizer.zero_grad()
             train_loss += loss.item()
+            y_pred_list.extend(np.argmax(y_pred.cpu().data.numpy(), axis=1).tolist())
+            y_true_list.extend(y.tolist())
+            
             print(f'[{i:03d}/{num_train_batch}]', end='\r')
-        
+        train_acc, train_f1 = macro_f1(num_class, y_pred_list, y_true_list)
         # Validation step
         model.eval()
+        y_pred_list , y_true_list= [], []
         with torch.no_grad():
             for i, (x,y) in enumerate(eval_loader):
                 y_pred = model(x.cuda())
                 loss = criterion(y_pred, y.cuda())
-                eval_acc += np.sum(np.argmax(y_pred.cpu().data.numpy(), axis=1) == y.numpy())
                 eval_loss += loss.item()
+                y_pred_list.extend(np.argmax(y_pred.cpu().data.numpy(), axis=1).tolist())
+                y_true_list.extend(y.tolist())
                 print(f'[{i:03d}/{num_eval_batch}]', end='\r')
-        
+        eval_acc, eval_f1 = macro_f1(num_class, y_pred_list, y_true_list)
         # Summarize per-epoch result
-        train_acc /= num_train_sample
         train_loss /= num_train_sample
-        eval_acc /= num_eval_sample
         eval_loss /= num_eval_sample
         print(f'epoch [{epoch+1:02d}/{args.num_train_epochs}]: {time.time()-epoch_start_time:.2f} sec(s)')
-        print(f'train loss: {train_loss:.4f}, train acc: {train_acc:.4f}')
-        print(f' eval loss: {eval_loss:.4f},  eval acc: {eval_acc:.4f}')
+        print(f'train loss: {train_loss:.4f}, train acc: {train_acc:.4f}, train macro_f1: {train_f1:.4f}')
+        print(f' eval loss: {eval_loss:.4f},  eval acc: {eval_acc:.4f},  eval macro_f1: {eval_f1:.4f}')
         if not args.debug:
-            wandb.log({"train_loss": train_loss, "train_acc": train_acc, "eval_loss": eval_loss, "eval_acc": eval_acc})
+            wandb.log({"train_loss": train_loss, "train_acc": train_acc, "eval_loss": eval_loss, "eval_acc": eval_acc, "train macro_f1": train_f1, "eval macro_f1": eval_f1})
         torch.save(model, args.model_save_path)  
     return
 
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='guan27',name='transforms')
+        wandb.init(project='chinese_handwriting_recognition', entity='guan27',name='')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)
