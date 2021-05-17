@@ -46,7 +46,7 @@ def parse_args():
     
     #Directories
     parser.add_argument("--data_dir", type=str, default='./clean', help="The directory which contains the training data.")
-    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnet50.pth', help="Where to store the final model.")
+    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnext101_32x8d.pth', help="Where to store the final model.")
     
     #DataAugumentation
     parser.add_argument('--crop_lower_bound', type=float, default=0.8, help="Parameters for RandomResizedCrop().")
@@ -54,13 +54,14 @@ def parse_args():
 
     #Training
     parser.add_argument("--num_train_epochs", type=int, default=100, help="Total number of training epochs to perform.")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size for the dataloader.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass.")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for the dataloader.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=4, help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     
     parser.add_argument("--seed", type=int, default=390625, help="A seed for reproducible training.")
     parser.add_argument("--pretrained_weight", type=bool, default=False, help="Whether to use pretrained weight provided in pytorch or not.")
+    parser.add_argument('--num_workers', type=int, default=16, help="num of workers for dataloader.")
     parser.add_argument("--debug", action="store_true", help="Activate debug mode and run training only with a subset of data.")
     
     args = parser.parse_args()
@@ -106,18 +107,18 @@ def main(args):
     # Prepare dataloader 
     print(f'Training with {num_train_sample} train_data, {num_eval_sample} eval_data across {num_class} classes.')
     train_dataset, eval_dataset = random_split(dataset, [num_train_sample, num_eval_sample])
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    eval_loader = DataLoader(eval_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=True)
+    eval_loader = DataLoader(eval_dataset, batch_size=args.batch_size, num_workers=args.num_workers, shuffle=False)
     num_train_batch = len(train_loader)
     num_eval_batch = len(eval_loader)
     
     # Load model
     if args.pretrained_weight: # If using pretrained weight, modify fully-connected layer output to num_class.
-        model = models.resnet50(pretrained=True)
+        model = models.resnext101_32x8d(pretrained=True)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_class)
     else:
-        model = models.resnet50(pretrained=False, num_classes=num_class)
+        model = models.resnext101_32x8d(pretrained=False, num_classes=num_class)
     model.cuda()
     if not args.debug:
         wandb.watch(model)   
@@ -171,7 +172,7 @@ def main(args):
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnet50')
+        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnext101_32x8d')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)
