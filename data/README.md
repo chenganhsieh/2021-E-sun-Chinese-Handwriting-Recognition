@@ -51,7 +51,10 @@ python3 augmentation.py
 
 ## 原先官網的60000多張圖片，按照label存成資料夾
 ```
+# 原先官網的60000多張圖片，按照label存成資料夾
 gdown --id '1hQ42JgyosLSzryex4hNPKntTkGytIh1B' --output data.zip
+# 加入 AIteam 資料並有10個 background
+gdown --id '1XRbwGpWWkvTVvmA0u5HdjbYXvUaaVdds' --output aiteam_10background.zip
 ```
 
 ## TODO: 
