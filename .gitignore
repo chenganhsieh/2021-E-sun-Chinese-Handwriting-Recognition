@@ -3,8 +3,10 @@ __pycache__/
 
 # Datas
 images/
+clean/
 split/
 wandb/
+model_weight/
 
 # Files
 *.zip

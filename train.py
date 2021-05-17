@@ -45,16 +45,19 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train a CNN model for Chinese Handwriting Recognition.")
     
     #Directories
-    parser.add_argument("--data_dir", type=str, default='./images', help="The directory which contains the training data.")
-    parser.add_argument("--model_save_path", type=str, default='model.pth', help="Where to store the final model.")
+    parser.add_argument("--data_dir", type=str, default='./clean', help="The directory which contains the training data.")
+    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnet50.pth', help="Where to store the final model.")
     
+    #DataAugumentation
+    parser.add_argument('--crop_lower_bound', type=float, default=0.8, help="Parameters for RandomResizedCrop().")
+    parser.add_argument('--color_jitter', type=float, default=0.25, help="Parameters for ColorJitter().")
+
     #Training
-    parser.add_argument("--num_train_epochs", type=int, default=50, help="Total number of training epochs to perform.")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for the dataloader.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of updates steps to accumulate before performing a backward/update pass.")
+    parser.add_argument("--num_train_epochs", type=int, default=100, help="Total number of training epochs to perform.")
+    parser.add_argument("--batch_size", type=int, default=128, help="Batch size for the dataloader.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
-    
     
     parser.add_argument("--seed", type=int, default=390625, help="A seed for reproducible training.")
     parser.add_argument("--pretrained_weight", type=bool, default=False, help="Whether to use pretrained weight provided in pytorch or not.")
@@ -77,8 +80,8 @@ def main(args):
     
     train_transform = transforms.Compose([
         SquarePad(),
-        transforms.RandomResizedCrop(224, scale=(0.8, 1)),
-        transforms.RandomApply([transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.3)],p=0.3),
+        transforms.RandomResizedCrop(224, scale=(args.crop_lower_bound, 1)),
+        transforms.RandomApply([transforms.ColorJitter(brightness=args.color_jitter, contrast=args.color_jitter, saturation=args.color_jitter, hue=args.color_jitter)],p=0.3),
         transforms.RandomRotation(15,fill=(255,255,255)),
         transforms.ToTensor(),
     ])
@@ -168,7 +171,7 @@ def main(args):
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='guan27',name='')
+        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnet50')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)
