@@ -9,6 +9,9 @@ wandb/
 model_weight/
 pure_ysun/
 pure_aiteam/
+ysun_1/
+ysun_2/
+ysun_3/
 
 # Logs
 logs/

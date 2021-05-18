@@ -43,7 +43,6 @@ def predict(image):
     y_pred = model(x.cuda())
     idx = np.argmax(y_pred.cpu().data.numpy(), axis=1)[0]
     char = classes[idx]
-    print(idx)
     return char
 
 if __name__ == "__main__":

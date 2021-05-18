@@ -45,9 +45,10 @@ def parse_args():
     
     #Directories
     parser.add_argument("--train_data_dir_1", type=str, default='./pure_aiteam', help="The directory which contains the training data.")
-    parser.add_argument("--train_data_dir_2", type=str, default='./pure_ysun', help="The directory which contains the training data.")
-    parser.add_argument("--eval_data_dir", type=str, default='./images', help="The directory which contains the validation data.")
-    parser.add_argument("--model_save_path", type=str, default='./model_weight/model.pth', help="Where to store the final model.")
+    parser.add_argument("--train_data_dir_2", type=str, default='./ysun_1', help="The directory which contains the training data.")
+    parser.add_argument("--train_data_dir_3", type=str, default='./ysun_3', help="The directory which contains the training data.")
+    parser.add_argument("--eval_data_dir", type=str, default='./ysun_2', help="The directory which contains the validation data.")
+    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnext50_32x4d_2.pth', help="Where to store the final model.")
     
     #DataAugumentation
     parser.add_argument('--crop_lower_bound', type=float, default=0.8, help="Parameters for RandomResizedCrop().")
@@ -55,8 +56,8 @@ def parse_args():
 
     #Training
     parser.add_argument("--num_train_epochs", type=int, default=100, help="Total number of training epochs to perform.")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size for the dataloader.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of updates steps to accumulate before performing a backward/update pass.")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for the dataloader.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     
@@ -98,18 +99,19 @@ def main(args):
 
     train_dataset_1 = datasets.ImageFolder(args.train_data_dir_1, transform = train_transform)
     train_dataset_2 = datasets.ImageFolder(args.train_data_dir_2, transform = train_transform)
-    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2])
+    train_dataset_3 = datasets.ImageFolder(args.train_data_dir_3, transform = train_transform)
+    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3])
     eval_dataset = datasets.ImageFolder(args.eval_data_dir, transform = test_transform)
     
     # Output a training image for observation
     # import matplotlib.pyplot as plt
     # plt.imsave('test.png',np.transpose(dataset[0][0].numpy(),(1,2,0)))
     # exit()
-    class_to_idx = train_dataset_2.class_to_idx
+    class_to_idx = train_dataset_1.class_to_idx
     num_class = len(class_to_idx)
     if args.debug: # Cut dataset size in debug mode
-        train_dataset,_ = random_split(train_dataset,[100,len(train_dataset)-100])
-        eval_dataset,_ = random_split(eval_dataset,[100,len(eval_dataset)-100])
+        train_dataset,_ = random_split(train_dataset,[200,len(train_dataset)-200])
+        eval_dataset,_ = random_split(eval_dataset,[200,len(eval_dataset)-200])
     num_train_sample = len(train_dataset)
     num_eval_sample = len(eval_dataset)
     
@@ -122,11 +124,11 @@ def main(args):
     
     # Load model
     if args.pretrained_weight: # If using pretrained weight, modify fully-connected layer output to num_class.
-        model = models.resnet50(pretrained=True)
+        model = models.resnext50_32x4d(pretrained=True)
         num_ftrs = model.fc.in_features
         model.fc = nn.Linear(num_ftrs, num_class)
     else:
-        model = models.resnet50(pretrained=False, num_classes=num_class)
+        model = models.resnext50_32x4d(pretrained=False, num_classes=num_class)
     model.cuda()
     if not args.debug:
         wandb.watch(model)   
@@ -183,7 +185,7 @@ def main(args):
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='')
+        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnext50_32x4d-2')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)
