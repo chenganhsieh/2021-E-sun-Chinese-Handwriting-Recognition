@@ -12,3 +12,6 @@ model_weight/
 *.zip
 *.pth
 *.png
+
+# Logs
+logs/
