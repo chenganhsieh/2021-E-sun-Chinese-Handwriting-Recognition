@@ -59,6 +59,12 @@ gdown --id '1XRbwGpWWkvTVvmA0u5HdjbYXvUaaVdds' --output aiteam_10background.zip
 gdown --id '1QptjrrnYIQ5oV_QuDQi0NPBTLuha65Gr' --output pure_aiteam.zip
 # 純 玉山(clean)
 gdown --id '17E-lVOhtKhmH20Qa2MR_TwJ_s5zmRMnR' --output pure_ysun.zip
+# 玉山-1 (clean)
+gdown --id '10IhtAVjGoj4kWxaciDMnjjXuRm41YnS3' --output ysun-1.zip
+# 玉山-2 (clean)
+gdown --id '1--MRDZxuK7xYjn9ya13kWHE85KuWZqQA' --output ysun-2.zip
+# 玉山-3 (clean)
+gdown --id '1-777mw8Y-Fzg7_v_lqImt8ch6moCC001' --output ysun-3.zip
 ```
 
 ## TODO: 
