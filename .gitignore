@@ -10,8 +10,15 @@ model_weight/
 pure_ysun/
 pure_aiteam/
 
+# Logs
+logs/
+
 # Files
 *.zip
 *.pth
 *.png
 *.json
+
+
+
+

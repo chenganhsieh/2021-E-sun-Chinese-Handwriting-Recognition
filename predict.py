@@ -52,3 +52,4 @@ if __name__ == "__main__":
     image_name = 'pure_ysun/鼎/00099.jpg'
     image = Image.open(image_name)
     print(predict(image))
+
