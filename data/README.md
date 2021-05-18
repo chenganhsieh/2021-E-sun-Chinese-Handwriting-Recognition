@@ -55,6 +55,10 @@ python3 augmentation.py
 gdown --id '1hQ42JgyosLSzryex4hNPKntTkGytIh1B' --output data.zip
 # 加入 AIteam 資料並有10個 background
 gdown --id '1XRbwGpWWkvTVvmA0u5HdjbYXvUaaVdds' --output aiteam_10background.zip
+# 純 AIteam
+gdown --id '1QptjrrnYIQ5oV_QuDQi0NPBTLuha65Gr' --output pure_aiteam.zip
+# 純 玉山(clean)
+gdown --id '17E-lVOhtKhmH20Qa2MR_TwJ_s5zmRMnR' --output pure_ysun.zip
 ```
 
 ## TODO: 
