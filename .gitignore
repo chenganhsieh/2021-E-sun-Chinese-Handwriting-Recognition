@@ -7,8 +7,11 @@ clean/
 split/
 wandb/
 model_weight/
+pure_ysun/
+pure_aiteam/
 
 # Files
 *.zip
 *.pth
 *.png
+*.json
