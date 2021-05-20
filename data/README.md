@@ -65,6 +65,9 @@ gdown --id '10IhtAVjGoj4kWxaciDMnjjXuRm41YnS3' --output ysun-1.zip
 gdown --id '1--MRDZxuK7xYjn9ya13kWHE85KuWZqQA' --output ysun-2.zip
 # 玉山-3 (clean)
 gdown --id '1-777mw8Y-Fzg7_v_lqImt8ch6moCC001' --output ysun-3.zip
+# 玉山-isnull (clean)
+gdown --id '1t7IBN0gPXLq1rS3X988kvw4iiGVi4xLQ' --output isnull.zip
+
 ```
 
 ## TODO: 
