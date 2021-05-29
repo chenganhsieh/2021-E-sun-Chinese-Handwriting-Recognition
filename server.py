@@ -11,13 +11,20 @@ from flask import request
 from flask import jsonify
 from PIL import Image
 
-from predict import predict
+# from predict import predict
+from predict_ensemble import predict
 
 
 CAPTAIN_EMAIL = 'liaoweiskewer0703@gmail.com'
 SALT = 'pj323guan302'
-app = Flask(__name__)
+
 Path("logs/").mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    filename=f"logs/server.log",
+    level=logging.INFO,
+    format="%(asctime)-15s %(levelname)-7s %(name)-10s %(message)s",
+)
+app = Flask(__name__)
 
 
 def generate_server_uuid(input_string):
@@ -59,21 +66,22 @@ def inference():
     server_uuid = generate_server_uuid(CAPTAIN_EMAIL + ts)
     server_timestamp = int(t.timestamp())
 
-    image_path = f"logs/{t.strftime('%m%d_%H%M%S')}_{data['esun_uuid'][:4]}.jpg"
-    image.save(image_path)
-    logger.info(f"image saved: {image_path}")
-
     answer = None
     try:
         answer = predict(image)
-        logger.info(f"prediction: {answer}")
     except Exception as e:
         logger.error(e)
     finally:
         if not answer or not isinstance(answer, str):
             answer = "isnull"
 
-    logger.info(f"approx. time spent: {datetime.datetime.now().timestamp() - infer_start_ts} s")
+    image_path = Path(f"logs/imgs/{answer}/{t.strftime('%m%d_%H%M%S')}_{data['esun_uuid'][:4]}.jpg")
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(image_path)
+    logger.info(
+        f"time spent:  {datetime.datetime.now().timestamp() - infer_start_ts:.3f} s"
+        f" | image saved: {image_path}"
+    )
 
     return jsonify({
         'esun_uuid': data['esun_uuid'],
@@ -84,17 +92,11 @@ def inference():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        filename=f"logs/server.log",
-        level=logging.INFO,
-        format="%(asctime)-15s %(levelname)-7s %(name)-10s %(message)s",
-    )
-
     arg_parser = ArgumentParser(
         usage='Usage: python ' + __file__ + ' [--port <port>] [--help]'
     )
     arg_parser.add_argument('-p', '--port', default=8080, help='port')
-    arg_parser.add_argument('-d', '--debug', default=True, help='debug')
+    arg_parser.add_argument('-d', '--debug', action='store_const', const=True, default=False)
     options = arg_parser.parse_args()
 
-    app.run(debug=options.debug, port=options.port)
+    app.run(debug=options.debug, port=options.port, host="0.0.0.0")
