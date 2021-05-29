@@ -46,10 +46,10 @@ def parse_args():
     #Directories
     parser.add_argument("--train_data_dir_1", type=str, default='./pure_aiteam', help="The directory which contains the training data.")
     parser.add_argument("--train_data_dir_2", type=str, default='./ysun_1', help="The directory which contains the training data.")
-    parser.add_argument("--train_data_dir_3", type=str, default='./ysun_2', help="The directory which contains the training data.")
+    parser.add_argument("--train_data_dir_3", type=str, default='./ysun_3', help="The directory which contains the training data.")
     parser.add_argument("--train_data_dir_4", type=str, default='./ysun_3', help="The directory which contains the training data.")
-    parser.add_argument("--eval_data_dir", type=str, default='./ysun_3', help="The directory which contains the validation data.")
-    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnext50_32x4d_ensemble_3.pth', help="Where to store the final model.")
+    parser.add_argument("--eval_data_dir", type=str, default='./ysun_2', help="The directory which contains the validation data.")
+    parser.add_argument("--model_save_path", type=str, default='./model_weight/resnext50_32x4d_2_null.pth', help="Where to store the final model.")
     
     #DataAugumentation
     parser.add_argument('--crop_lower_bound', type=float, default=0.8, help="Parameters for RandomResizedCrop().")
@@ -62,7 +62,7 @@ def parse_args():
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     
-    parser.add_argument("--seed", type=int, default=1027, help="A seed for reproducible training.")
+    parser.add_argument("--seed", type=int, default=390625, help="A seed for reproducible training.")
     parser.add_argument("--pretrained_weight", type=bool, default=False, help="Whether to use pretrained weight provided in pytorch or not.")
     parser.add_argument('--num_workers', type=int, default=16, help="num of workers for dataloader.")
     parser.add_argument("--debug", action="store_true", help="Activate debug mode and run training only with a subset of data.")
@@ -84,17 +84,24 @@ def main(args):
                 padding = (0, vp, 0, w-h-vp)
 
             return pad(image, padding, (255,255,255), 'constant')
+
+    class Rotation90:
+        def __call__(self, image):
+            angle = random.choice([-90,90])
+            return transforms.functional.rotate(image, angle,fill=(255,255,255))
     
     train_transform = transforms.Compose([
         SquarePad(),
         transforms.RandomResizedCrop(224, scale=(args.crop_lower_bound, 1)),
         transforms.RandomApply([transforms.ColorJitter(brightness=args.color_jitter, contrast=args.color_jitter, saturation=args.color_jitter, hue=args.color_jitter)],p=0.3),
         transforms.RandomRotation(15,fill=(255,255,255)),
+        transforms.RandomApply([Rotation90()],p=0.03),
         transforms.ToTensor(),
     ])
     test_transform = transforms.Compose([
         SquarePad(),
         transforms.Resize(224),
+        transforms.RandomApply([Rotation90()],p=0.01),
         transforms.ToTensor(),
     ])
 
@@ -103,13 +110,14 @@ def main(args):
     train_dataset_1,_ = random_split(train_dataset_1,[int(len(train_dataset_1)*0.45),len(train_dataset_1)-int(len(train_dataset_1)*0.45)])
     train_dataset_2 = datasets.ImageFolder(args.train_data_dir_2, transform = train_transform)
     train_dataset_3 = datasets.ImageFolder(args.train_data_dir_3, transform = train_transform)
-    train_dataset_4 = datasets.ImageFolder(args.train_data_dir_4, transform = train_transform)
-    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3, train_dataset_4])
+    # train_dataset_4 = datasets.ImageFolder(args.train_data_dir_4, transform = train_transform)
+    # train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3, train_dataset_4])
+    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3])
     eval_dataset = datasets.ImageFolder(args.eval_data_dir, transform = test_transform)
     
     # Output a training image for observation
     # import matplotlib.pyplot as plt
-    # plt.imsave('test.png',np.transpose(dataset[0][0].numpy(),(1,2,0)))
+    # plt.imsave('test.png',np.transpose(train_dataset_1[0][0].numpy(),(1,2,0)))
     # exit()
     
     num_class = len(class_to_idx)
@@ -189,7 +197,7 @@ def main(args):
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnext50_32x4d_ensemble_3')
+        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='resnext50_32x4d_2_null')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)
