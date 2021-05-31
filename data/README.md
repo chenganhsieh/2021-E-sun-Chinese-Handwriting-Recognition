@@ -71,8 +71,28 @@ gdown --id '1t7IBN0gPXLq1rS3X988kvw4iiGVi4xLQ' --output isnull.zip
 gdown --id '1HF9wr7LnnSiYvgk6y-JD28qPsYpzaX1H' --output isnull_large.zip
 
 
+```
+## 5/31 更新 by威仲
+```
+- 801 setting (w/ isnull)
+#train - (aiteam)
+gdown --id "1-6zGHr5L6wLsSD5zdc77IH3RCbepLRRo" --output train_801.zip
+#valid (ysun 3fold)
+gdown --id "1-7yldjTMDldegcUtBbHnQFxixMwKEzUT" --output valid_ysun1_801.zip
+gdown --id "1-E0S6G2gXz_A9z9zZZxe5dlqCYPxMwj4" --output valid_ysun2_801.zip
+gdown --id "1-QppMmKphDQkelpT9LKhCYXHzNU5TqVc" --output valid_ysun3_801.zip
+
+- 4000 setting (w/o isnull -> 總共4839 class in folder)
+# train - (aitem)
+gdown --id "1-R3yb-ZLLUwXx7c6Q7YN37KhdY3FE_3Y" --output train_4000.zip
+#valid (ysun 3fold)
+gdown --id "1-UTGFeVjSOkzxwJZQ6YDt3zZP9jxLnKK" --output valid_ysun1_4000.zip
+gdown --id "1-UXgXzi3mUb1nW1q9TkTlkmiXZ3Z0Ec0" --output valid_ysun2_4000.zip
+gdown --id "1-Ylg4TYFZUw468bgJZKUtscwYZevwyh0" --output valid_ysun3_4000.zip
 
 ```
+
+
 
 ## TODO: 
 每個人要clean的資料，除了 廖威仲是split_1之外，其餘的split_2/3/4 各由一個人認領
