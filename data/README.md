@@ -72,6 +72,20 @@ gdown --id '1HF9wr7LnnSiYvgk6y-JD28qPsYpzaX1H' --output isnull_large.zip
 
 
 ```
+## 6/1 更新 by正安
+```
+- 801 setting (w/ isnull)
+#valid (aiteam)
+gdown --id "1xxxFtF9hXJKl3VWO3mNLez5yKvidfywI" --output valid_aiteam1_801.zip
+gdown --id "1bxknKAhploHRQ9Xxex9WFPO7phdECEdH" --output valid_aiteam2_801.zip
+gdown --id "1GeGsyXBX0Sq3FV46j0l4WeGx5uusDnlH" --output valid_aiteam3_801.zip
+
+- 4000 setting (w/o isnull -> 總共4839 class in folder)
+# train - (aitem)
+gdown --id "1TPnSn-OCQJ2Lvka38YQwm7oPM6loREPT" --output aiteam_80000.zip
+```
+
+
 ## 5/31 更新 by威仲
 ```
 - 801 setting (w/ isnull)
