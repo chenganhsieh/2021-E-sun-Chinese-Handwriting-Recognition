@@ -106,6 +106,15 @@ gdown --id "1-Ylg4TYFZUw468bgJZKUtscwYZevwyh0" --output valid_ysun3_4000.zip
 
 ```
 
+- 4000 new setting (with 正安給的新的83000資料)
+# train - (aitem)
+gdown --id "12gzyUcYCrs4-AKW2GkQdT5CrCqQL0wWA" --output train_4000.zip
+#valid (ysun 3fold)
+gdown --id "1-EaRBXZGuoLN4jkYkIZ9bzvgq2oyqXqA" --output valid_ysun1_4000.zip
+gdown --id "1-7zFYFarh0B6nBnbbTwbgZVrcDYhgfCD" --output valid_ysun2_4000.zip
+gdown --id "1-4cNHKKJBHXRTqt6_lmJez-LepGlWnys" --output valid_ysun3_4000.zip
+
+
 
 
 ## TODO: 
