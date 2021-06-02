@@ -20,6 +20,7 @@ logs/
 *.zip
 *.pth
 *.png
+*.jpg
 *.json
 
 
