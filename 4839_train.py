@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, ConcatDataset, random_split
 from torchvision import datasets, transforms
 from torchvision.transforms.functional import pad
 import torchvision.models as models
+from efficientnet_pytorch import EfficientNet
 import numpy as np
 import random
 import wandb
@@ -56,12 +57,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train a CNN model for Chinese Handwriting Recognition.")
     
     #Directories
-    parser.add_argument("--train_data_dir_1", type=str, default='./pure_aiteam', help="The directory which contains the training data.")
-    parser.add_argument("--train_data_dir_2", type=str, default='./ysun_1', help="The directory which contains the training data.")
-    parser.add_argument("--train_data_dir_3", type=str, default='./ysun_2', help="The directory which contains the training data.")
-    parser.add_argument("--train_data_dir_4", type=str, default='./ysun_3', help="The directory which contains the training data.")
-    parser.add_argument("--eval_data_dir", type=str, default='./ysun_3', help="The directory which contains the validation data.")
-    parser.add_argument("--model_save_path", type=str, default='./model_weight/801cls_3.pth', help="Where to store the final model.")
+    parser.add_argument("--train_data_dir_1", type=str, default='./content/aiteam_4839', help="The directory which contains the training data.")
+    parser.add_argument("--train_data_dir_2", type=str, default='./content/ysun_1_4000', help="The directory which contains the training data.")
+    parser.add_argument("--train_data_dir_3", type=str, default='./content/ysun_2_4000', help="The directory which contains the training data.")
+    parser.add_argument("--train_data_dir_4", type=str, default='./content/ysun_3_4000', help="The directory which contains the training data.")
+    parser.add_argument("--eval_data_dir", type=str, default='./content/ysun_3_4000', help="The directory which contains the validation data.")
+    parser.add_argument("--model_save_path", type=str, default='./model_weight/ensemble_b5_8.pth', help="Where to store the final model.")
     
     #DataAugumentation
     parser.add_argument('--crop_lower_bound', type=float, default=0.8, help="Parameters for RandomResizedCrop().")
@@ -69,12 +70,13 @@ def parse_args():
 
     #Training
     parser.add_argument("--num_train_epochs", type=int, default=100, help="Total number of training epochs to perform.")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for the dataloader.")
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=2, help="Number of updates steps to accumulate before performing a backward/update pass.")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for the dataloader.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=8, help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Initial learning rate to use.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     
-    parser.add_argument("--seed", type=int, default=390625, help="A seed for reproducible training.")
+    parser.add_argument("--model_name", type=str, default='efficientnet-b5', help="Where to store the final model.")
+    parser.add_argument("--seed", type=int, default=314159, help="A seed for reproducible training.")
     parser.add_argument('--num_workers', type=int, default=16, help="num of workers for dataloader.")
     parser.add_argument("--debug", action="store_true", help="Activate debug mode and run training only with a subset of data.")
     
@@ -108,30 +110,32 @@ def main(args):
         transforms.RandomRotation(15,fill=(255,255,255)),
         transforms.RandomApply([Rotation90()],p=0.03),
         transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
     test_transform = transforms.Compose([
         SquarePad(),
         transforms.Resize(224),
         transforms.RandomApply([Rotation90()],p=0.01),
         transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
 
     train_dataset_1 = datasets.ImageFolder(args.train_data_dir_1, transform = train_transform)
     classes = train_dataset_1.classes
-    train_dataset_1,_ = random_split(train_dataset_1,[int(len(train_dataset_1)*0.45),len(train_dataset_1)-int(len(train_dataset_1)*0.45)])
+    train_dataset_1,_ = random_split(train_dataset_1,[int(len(train_dataset_1)*0.75),len(train_dataset_1)-int(len(train_dataset_1)*0.75)])
     
     train_dataset_2 = datasets.ImageFolder(args.train_data_dir_2, transform = train_transform)
     train_dataset_3 = datasets.ImageFolder(args.train_data_dir_3, transform = train_transform)
-    # train_dataset_4 = datasets.ImageFolder(args.train_data_dir_4, transform = train_transform)
-    # train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3, train_dataset_4])
+    train_dataset_4 = datasets.ImageFolder(args.train_data_dir_4, transform = train_transform)
+    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3, train_dataset_4])
     
-    train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3])
+    # train_dataset = ConcatDataset([train_dataset_1, train_dataset_2, train_dataset_3])
     eval_dataset = datasets.ImageFolder(args.eval_data_dir, transform = test_transform)
     # Output a training image for observation
     # import matplotlib.pyplot as plt
     # plt.imsave('test.png',np.transpose(train_dataset_1[0][0].numpy(),(1,2,0)))
     # exit()
-    
+
     num_class = len(classes)
 
     if args.debug: # Cut dataset size in debug mode
@@ -148,7 +152,10 @@ def main(args):
     num_eval_batch = len(eval_loader)
     
     # Load model
-    model = models.resnext50_32x4d(pretrained=False, num_classes=num_class)
+    if 'efficient' in args.model_name:
+        model = EfficientNet.from_name(args.model_name, num_classes=num_class)
+    elif args.model_name == 'resnext50':
+        model = models.resnext50_32x4d(pretrained=False, num_classes=num_class)
     model.cuda()
     if not args.debug:
         wandb.watch(model)   
@@ -202,7 +209,7 @@ def main(args):
 if __name__ == "__main__":
     args = parse_args()
     if not args.debug:
-        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='801cls_3')
+        wandb.init(project='chinese_handwriting_recognition', entity='waste30minfornaming',name='ensemble_b5_8')
         config = wandb.config
         config.update(args)
     set_seed(args.seed)

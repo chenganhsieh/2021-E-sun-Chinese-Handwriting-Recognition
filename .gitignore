@@ -2,6 +2,7 @@
 __pycache__/
 
 # Datas
+content/
 images/
 clean/
 split/
@@ -12,6 +13,7 @@ pure_aiteam/
 ysun_1/
 ysun_2/
 ysun_3/
+zips/
 
 # Logs
 logs/
