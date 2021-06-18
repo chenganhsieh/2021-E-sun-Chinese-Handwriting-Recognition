@@ -12,7 +12,9 @@ from flask import jsonify
 from PIL import Image
 
 # from predict import predict
-from predict_ensemble import predict
+# from predict_ensemble import predict
+# predict = __import__("4839_predict").predict
+predict = __import__("4839_predict_ensemble").predict
 
 
 CAPTAIN_EMAIL = 'liaoweiskewer0703@gmail.com'

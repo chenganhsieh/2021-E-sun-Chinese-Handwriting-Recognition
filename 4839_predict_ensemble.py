@@ -4,20 +4,15 @@ from torchvision import transforms
 from torchvision.transforms.functional import pad
 import numpy as np
 
-model_path_1 = './model_weight/resnext50_32x4d_ensemble_1.pth'
-model_path_2 = './model_weight/resnext50_32x4d_ensemble_2.pth'
-model_path_3 = './model_weight/resnext50_32x4d_ensemble_3.pth'
-classes_path = './classes4839.json'
-in_class_dict_path = './class_to_idx.json'
-model_1 = torch.load(model_path_1)
-model_1.cuda()
-model_1.eval()
-model_2 = torch.load(model_path_2)
-model_2.cuda()
-model_2.eval()
-model_3 = torch.load(model_path_3)
-model_3.cuda()
-model_3.eval()
+
+model_list = []
+for i in range(1, 8 + 1):
+    model = torch.load(f'ckpt/ensemble_b5_{i}.pth')
+    model.cuda()
+    model.eval()
+    model_list.append(model)
+classes_path = 'ckpt/classes4839.json'
+in_class_dict_path = 'ckpt/class_to_idx.json'
 
 with open(classes_path, 'r') as f:
     classes = json.load(f)
@@ -40,6 +35,7 @@ test_transform = transforms.Compose([
         SquarePad(),
         transforms.Resize(224),
         transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
     ])
 
 def image_loader(transforms, image):
@@ -50,16 +46,67 @@ def image_loader(transforms, image):
 
 
 def predict(image):
-    x = image_loader(test_transform, image)
-    y_pred_1 = model_1(x.cuda())
-    y_pred_2 = model_2(x.cuda())
-    y_pred_3 = model_3(x.cuda())
-    y_pred = y_pred_1 + y_pred_2 + y_pred_3
-    idx = np.argmax(y_pred.cpu().data.numpy(), axis=1)[0]
-    char = classes[idx]
-    if char not in in_class_dict:
+    x = image_loader(test_transform, image).cuda()
+    ens_logits = None
+    isnull_vote = 0
+    char_rec = []
+    for model in model_list:
+        logits = model(x)
+        if ens_logits is None:
+            ens_logits = logits
+        else:
+            ens_logits += logits
+        char = classes[torch.argmax(logits, dim=1)[0]]
+        if char not in in_class_dict:
+            isnull_vote += 1
+            char = f'{char}(isnull)'
+        char_rec.append(char)
+    if isnull_vote > len(model_list) / 2:
         char = 'isnull'
+    else:
+        char = classes[torch.argmax(ens_logits, dim=1)[0]]
+        if char not in in_class_dict:
+            char = 'isnull'
+    # print(char_rec)
     return char
+
+def predict_batch(batch, labels):
+    batch = batch.cuda()
+    ens_logits = None
+    ens_isnull = None
+    for model in model_list:
+        logits = model(batch)
+        if ens_logits is None:
+            ens_logits = logits
+        else:
+            ens_logits += logits
+        indices = torch.argmax(logits, dim=1)
+        isnull = torch.tensor([classes[idx] not in in_class_dict for idx in indices], dtype=torch.int)
+        if ens_isnull is None:
+            ens_isnull = isnull
+        else:
+            ens_isnull += isnull
+
+    indices = torch.argmax(ens_logits, dim=1)
+    corrects = 0
+    for idx, isnull, label in zip(indices, ens_isnull, labels):
+        # if isnull > len(model_list) / 2:
+        if isnull >=4:
+            pred = "isnull"
+        else:
+            if classes[idx] not in in_class_dict:
+                pred = "isnull"
+            else:
+                pred = classes[idx]
+        if classes[label] not in in_class_dict:
+            label = "isnull"
+        else:
+            label = classes[label]
+        corrects += (pred == label)
+        if pred != label:
+            print(f"gt: {label}, pred: {pred}")
+    return corrects
+
 
 if __name__ == "__main__":
     # import matplotlib.pyplot as plt
